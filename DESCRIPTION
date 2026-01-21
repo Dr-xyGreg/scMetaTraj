@@ -1,0 +1,26 @@
+Package: scMetaTraj
+Type: Package
+Title: Metabolic State Space and Trajectory Analysis for Single-Cell Data
+Version: 0.1.0
+Authors@R: 
+    person("YourName", "Here", email = "your@email.com", role = c("aut", "cre"))
+Description: 
+    scMetaTraj provides a framework for modeling cellular metabolic states 
+    and continuous metabolic trajectories using pathway-level scoring.
+    The package enables lineage-restricted metabolic analysis, 
+    metabolic pseudotime inference, module-level trend analysis, 
+    and visualization of metabolic state transitions.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports:
+    stats,
+    igraph,
+    ggplot2,
+    ggridges,
+    magrittr
+Suggests:
+    dplyr,
+    tidyr,
+    devtools

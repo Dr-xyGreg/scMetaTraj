@@ -1,0 +1,92 @@
+#' Infer metabolic pseudotime (mPT)
+#'
+#' @description
+#' Infer an ordered metabolic pseudotime (mPT) based on geodesic distances
+#' in a metabolic PCA space. mPT reflects relative positioning along a
+#' metabolic trajectory rather than biological time.
+#'
+#' @param embedding Matrix or data.frame (cells x PCs), typically PCA embedding
+#'   derived from metabolic module scores.
+#' @param k Integer. Number of nearest neighbors for graph construction.
+#' @param root_mode Character. How to choose the root cell:
+#'   "pc1_min", "pc1_max", "axis_min", "axis_max", or "manual".
+#' @param axis_score Optional numeric vector used when root_mode is axis_*.
+#' @param root_cell Optional cell name used when root_mode = "manual".
+#' @param scale Logical. Whether to rescale mPT to the range 0–1.
+#'
+#' @return A list with elements:
+#'   - mPT: numeric vector of metabolic pseudotime
+#'   - root: root cell name
+#'   - dist: raw geodesic distances
+#'
+#' @export
+scMetaTraj_infer <- function(
+    embedding,
+    k = 20,
+    root_mode = c("pc1_min", "pc1_max", "axis_min", "axis_max", "manual"),
+    axis_score = NULL,
+    root_cell = NULL,
+    scale = TRUE
+) {
+  root_mode <- match.arg(root_mode)
+  
+  if (!requireNamespace("igraph", quietly = TRUE)) {
+    stop("Package 'igraph' is required.")
+  }
+  
+  emb <- as.matrix(embedding)
+  if (is.null(rownames(emb))) stop("embedding must have rownames (cell IDs).")
+  
+  n <- nrow(emb)
+  k <- min(k, n - 1)
+  
+  # Pairwise distances
+  D <- as.matrix(dist(emb))
+  
+  # kNN graph
+  nn_idx <- apply(D, 1, function(x) order(x)[2:(k + 1)])
+  edges <- cbind(
+    from = rep(seq_len(n), each = k),
+    to   = as.vector(nn_idx)
+  )
+  weights <- D[edges]
+  
+  g <- igraph::graph_from_edgelist(edges, directed = TRUE)
+  igraph::E(g)$weight <- weights
+  g <- igraph::as_undirected(g, mode = "collapse",
+                             edge_attr_comb = list(weight = "min"))
+  
+  # Root selection
+  root_idx <- switch(
+    root_mode,
+    pc1_min  = which.min(emb[, 1]),
+    pc1_max  = which.max(emb[, 1]),
+    axis_min = which.min(axis_score),
+    axis_max = which.max(axis_score),
+    manual   = which(rownames(emb) == root_cell)
+  )
+  
+  root_name <- rownames(emb)[root_idx]
+  
+  # Geodesic distance
+  d <- igraph::distances(g, v = root_idx, weights = igraph::E(g)$weight)
+  d <- as.numeric(d)
+  d[is.infinite(d)] <- NA
+  
+  mPT <- d
+  if (scale) {
+    rng <- range(mPT, na.rm = TRUE)
+    if (diff(rng) > 0) {
+      mPT <- (mPT - rng[1]) / diff(rng)
+    }
+  }
+  
+  names(mPT) <- rownames(emb)
+  names(d) <- rownames(emb)
+  
+  list(
+    mPT = mPT,
+    root = root_name,
+    dist = d
+  )
+}
