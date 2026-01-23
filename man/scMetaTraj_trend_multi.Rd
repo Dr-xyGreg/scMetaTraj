@@ -2,8 +2,7 @@
 % Please edit documentation in R/trend_multi.R
 \name{scMetaTraj_trend_multi}
 \alias{scMetaTraj_trend_multi}
-\title{Compute trends and switchpoints for multiple modules along mPT
-#' @importFrom stats aggregate median dist}
+\title{Compute trends and switchpoints for multiple modules along mPT}
 \usage{
 scMetaTraj_trend_multi(
   score_mat,
@@ -36,5 +35,4 @@ A list with:
 }
 \description{
 Compute trends and switchpoints for multiple modules along mPT
-#' @importFrom stats aggregate median dist
 }

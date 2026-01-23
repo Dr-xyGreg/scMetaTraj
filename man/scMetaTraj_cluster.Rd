@@ -18,14 +18,15 @@ Output of scMetaTraj_embed(method = "PCA").}
 
 \item{k}{Integer. Number of nearest neighbors for kNN graph.}
 
-\item{resolution}{Numeric. Resolution parameter for clustering.}
+\item{resolution}{Numeric. Resolution parameter for clustering
+(used for Leiden only).}
 
 \item{method}{Character. "leiden" (default) or "louvain".}
 
 \item{seed}{Integer. Random seed for reproducibility.}
 }
 \value{
-A factor of length = number of cells,
+A factor of length equal to number of cells,
 giving metabolic cluster labels per cell.
 }
 \description{

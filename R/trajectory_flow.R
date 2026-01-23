@@ -24,7 +24,7 @@ scMetaTraj_flow <- function(
   emb_umap <- as.matrix(emb_umap)
   
   n <- nrow(emb_pca)
-  D <- as.matrix(dist(emb_pca))
+  D <- as.matrix(stats::dist(emb_pca))
   
   dx <- dy <- numeric(n)
   

@@ -10,14 +10,15 @@
 #' - Results are independent of transcriptomic clustering.
 #'
 #' @param embedding Numeric matrix (cells x PCs).
-#'        Output of scMetaTraj_embed(method = "PCA").
+#'   Output of scMetaTraj_embed(method = "PCA").
 #' @param k Integer. Number of nearest neighbors for kNN graph.
-#' @param resolution Numeric. Resolution parameter for clustering.
+#' @param resolution Numeric. Resolution parameter for clustering
+#'   (used for Leiden only).
 #' @param method Character. "leiden" (default) or "louvain".
 #' @param seed Integer. Random seed for reproducibility.
 #'
-#' @return A factor of length = number of cells,
-#'         giving metabolic cluster labels per cell.
+#' @return A factor of length equal to number of cells,
+#'   giving metabolic cluster labels per cell.
 #'
 #' @export
 scMetaTraj_cluster <- function(
@@ -27,6 +28,7 @@ scMetaTraj_cluster <- function(
     method = c("leiden", "louvain"),
     seed = 123
 ) {
+  
   method <- match.arg(method)
   
   # -----------------------------
@@ -36,7 +38,7 @@ scMetaTraj_cluster <- function(
     stop("embedding must be a numeric matrix (cells x PCs).")
   }
   
-  if (nrow(embedding) < (k + 1)) {
+  if (nrow(embedding) <= k) {
     stop("Number of cells must be greater than k.")
   }
   
@@ -49,26 +51,16 @@ scMetaTraj_cluster <- function(
   # -----------------------------
   # Step 1: Build kNN graph
   # -----------------------------
-  # We use RANN for fast nearest-neighbor search in PCA space.
-  if (!requireNamespace("RANN", quietly = TRUE)) {
-    stop("Package 'RANN' is required. Install via install.packages('RANN').")
-  }
-  
   nn <- RANN::nn2(
     data = embedding,
-    k = k + 1   # include self; will remove later
+    k = k + 1   # include self, removed below
   )
   
-  # Remove self-neighbors (first column)
   nn_idx <- nn$nn.idx[, -1, drop = FALSE]
   
   # -----------------------------
-  # Step 2: Convert kNN to graph
+  # Step 2: Convert kNN to igraph
   # -----------------------------
-  if (!requireNamespace("igraph", quietly = TRUE)) {
-    stop("Package 'igraph' is required. Install via install.packages('igraph').")
-  }
-  
   edges <- cbind(
     rep(seq_len(nrow(nn_idx)), each = ncol(nn_idx)),
     as.vector(nn_idx)
@@ -80,20 +72,18 @@ scMetaTraj_cluster <- function(
   # Step 3: Community detection
   # -----------------------------
   if (method == "leiden") {
-    if (!requireNamespace("leiden", quietly = TRUE)) {
-      stop("Package 'leiden' is required for Leiden clustering.")
-    }
-    cl <- leiden::leiden(
+    
+    # CRAN-safe Leiden implementation (igraph >= 1.3)
+    cl <- igraph::cluster_leiden(
       g,
-      resolution_parameter = resolution,
-      seed = seed
-    )
-  } else if (method == "louvain") {
-    cl <- igraph::cluster_louvain(g)$membership
+      resolution_parameter = resolution
+    )$membership
+    
   } else {
-    stop("method must be 'leiden' or 'louvain'")
+    
+    cl <- igraph::cluster_louvain(g)$membership
+    
   }
-  
   
   clusters <- factor(cl)
   names(clusters) <- rownames(embedding)

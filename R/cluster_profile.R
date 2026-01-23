@@ -17,6 +17,7 @@ scMetaTraj_cluster_profile <- function(
     stat = c("median", "mean"),
     scale = TRUE
 ) {
+  
   stat <- match.arg(stat)
   
   if (!is.matrix(scores)) {
@@ -28,25 +29,24 @@ scMetaTraj_cluster_profile <- function(
   }
   
   metabolic_cluster <- as.factor(metabolic_cluster)
-  
   clusters <- levels(metabolic_cluster)
   
-  prof <- sapply(clusters, function(cl) {
+  prof <- base::sapply(clusters, function(cl) {
     idx <- which(metabolic_cluster == cl)
     sub <- scores[idx, , drop = FALSE]
     
     if (stat == "median") {
-      apply(sub, 2, median, na.rm = TRUE)
+      base::apply(sub, 2, stats::median, na.rm = TRUE)
     } else {
-      colMeans(sub, na.rm = TRUE)
+      base::colMeans(sub, na.rm = TRUE)
     }
   })
   
-  prof <- t(prof)
+  prof <- base::t(prof)
   rownames(prof) <- clusters
   
   if (scale) {
-    prof <- scale(prof)
+    prof <- base::scale(prof)
   }
   
   as.data.frame(prof)

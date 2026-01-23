@@ -1,25 +1,3 @@
-#' Infer metabolic pseudotime (mPT)
-#'
-#' @description
-#' Infer an ordered metabolic pseudotime (mPT) based on geodesic distances
-#' in a metabolic PCA space. mPT reflects relative positioning along a
-#' metabolic trajectory rather than biological time.
-#'
-#' @param embedding Matrix or data.frame (cells x PCs), typically PCA embedding
-#'   derived from metabolic module scores.
-#' @param k Integer. Number of nearest neighbors for graph construction.
-#' @param root_mode Character. How to choose the root cell:
-#'   "pc1_min", "pc1_max", "axis_min", "axis_max", or "manual".
-#' @param axis_score Optional numeric vector used when root_mode is axis_*.
-#' @param root_cell Optional cell name used when root_mode = "manual".
-#' @param scale Logical. Whether to rescale mPT to the range 0–1.
-#'
-#' @return A list with elements:
-#'   - mPT: numeric vector of metabolic pseudotime
-#'   - root: root cell name
-#'   - dist: raw geodesic distances
-#'
-#' @export
 scMetaTraj_infer <- function(
     embedding,
     k = 20,
@@ -40,11 +18,10 @@ scMetaTraj_infer <- function(
   n <- nrow(emb)
   k <- min(k, n - 1)
   
-  # Pairwise distances
-  D <- as.matrix(dist(emb))
+  ## ---- FIX HERE ----
+  D <- as.matrix(stats::dist(emb))
   
-  # kNN graph
-  nn_idx <- apply(D, 1, function(x) order(x)[2:(k + 1)])
+  nn_idx <- base::apply(D, 1, function(x) order(x)[2:(k + 1)])
   edges <- cbind(
     from = rep(seq_len(n), each = k),
     to   = as.vector(nn_idx)
@@ -53,10 +30,11 @@ scMetaTraj_infer <- function(
   
   g <- igraph::graph_from_edgelist(edges, directed = TRUE)
   igraph::E(g)$weight <- weights
-  g <- igraph::as_undirected(g, mode = "collapse",
-                             edge_attr_comb = list(weight = "min"))
+  g <- igraph::as_undirected(
+    g, mode = "collapse",
+    edge_attr_comb = list(weight = "min")
+  )
   
-  # Root selection
   root_idx <- switch(
     root_mode,
     pc1_min  = which.min(emb[, 1]),
@@ -68,7 +46,6 @@ scMetaTraj_infer <- function(
   
   root_name <- rownames(emb)[root_idx]
   
-  # Geodesic distance
   d <- igraph::distances(g, v = root_idx, weights = igraph::E(g)$weight)
   d <- as.numeric(d)
   d[is.infinite(d)] <- NA
@@ -82,11 +59,7 @@ scMetaTraj_infer <- function(
   }
   
   names(mPT) <- rownames(emb)
-  names(d) <- rownames(emb)
+  names(d)   <- rownames(emb)
   
-  list(
-    mPT = mPT,
-    root = root_name,
-    dist = d
-  )
+  list(mPT = mPT, root = root_name, dist = d)
 }

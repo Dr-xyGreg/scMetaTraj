@@ -16,7 +16,7 @@ scMetaTraj_mPT_distribution <- function(mPT, cluster) {
     cluster = as.factor(cluster)
   )
   
-  ord <- aggregate(mPT ~ cluster, df, median, na.rm = TRUE)
+  ord <- stats::aggregate(mPT ~ cluster, df, stats::median, na.rm = TRUE)
   ord <- ord[order(ord$mPT), "cluster"]
   
   df$cluster <- factor(df$cluster, levels = as.character(ord))

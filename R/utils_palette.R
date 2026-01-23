@@ -11,3 +11,9 @@ scMetaTraj_palette_discrete <- c(
   "#692F7C", "#B43970", "#EFA143", "#282A62",
   "#D96558", "#F6C63C", "#4B4453", "#8E7DBE"
 )
+utils::globalVariables(c(
+  "UMAP_1", "UMAP_2",
+  "cluster", "module", "score",
+  "cluster_rank", "mPT_bin",
+  "score_smooth", "mPT_switch"
+))

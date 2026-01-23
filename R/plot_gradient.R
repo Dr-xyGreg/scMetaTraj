@@ -17,25 +17,29 @@ scMetaTraj_plot_gradient <- function(
     title = "Metabolic gradient",
     palette
 ) {
+  
   df <- data.frame(
     UMAP_1 = embedding[, 1],
     UMAP_2 = embedding[, 2],
     score  = score
   )
   
-  ggplot(df, aes(UMAP_1, UMAP_2)) +
-    geom_point(
-      aes(color = score),
+  ggplot2::ggplot(
+    df,
+    ggplot2::aes(x = UMAP_1, y = UMAP_2)
+  ) +
+    ggplot2::geom_point(
+      ggplot2::aes(color = score),
       size = 3.5,
       alpha = 0.85
     ) +
-    scale_color_gradientn(colors = palette) +
-    theme_classic() +
-    labs(
+    ggplot2::scale_color_gradientn(colors = palette) +
+    ggplot2::theme_classic() +
+    ggplot2::labs(
       title = title,
       color = "Metabolic\nactivity"
     ) +
-    theme(
-      plot.title = element_text(hjust = 0.5)
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5)
     )
 }
