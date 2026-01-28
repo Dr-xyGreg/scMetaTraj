@@ -3,7 +3,7 @@ Type: Package
 Title: Metabolic State Space and Trajectory Analysis for Single-Cell Data
 Version: 0.1.0
 Authors@R:
-    person("Jinwei", "Dai",
+    person("Greg", "Dai",
            email = "greg0453@163.com",
            role = c("aut", "cre"))
 Description:
