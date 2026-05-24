@@ -20,6 +20,26 @@
 #' @return A factor of length equal to number of cells,
 #'   giving metabolic cluster labels per cell.
 #'
+#' @examples
+#' # Create example PCA embedding
+#' set.seed(123)
+#' n_cells <- 100
+#' n_pcs <- 5
+#' 
+#' embedding <- matrix(rnorm(n_cells * n_pcs), nrow = n_cells, ncol = n_pcs)
+#' rownames(embedding) <- paste0("Cell", 1:n_cells)
+#' colnames(embedding) <- paste0("PC", 1:n_pcs)
+#' 
+#' # Perform clustering
+#' clusters <- scMetaTraj_cluster(
+#'   embedding = embedding,
+#'   k = 20,
+#'   method = "louvain"
+#' )
+#' 
+#' # View results
+#' table(clusters)
+#'
 #' @export
 scMetaTraj_cluster <- function(
     embedding,

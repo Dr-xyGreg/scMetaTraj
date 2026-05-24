@@ -1,18 +1,30 @@
 ## Test environments
+
 * local Windows install, R 4.4.2
-* win-builder (devel)
 
 ## R CMD check results
-0 errors | 0 warnings | 3 notes
 
-* NOTE: unable to verify current time
-  This is a system/network issue and does not affect package functionality.
+This submission updates `scMetaTraj` to version 0.1.2.
 
-* NOTE: Non-standard file 'LICENSE.md' found at top level
-  This is standard for GitHub repositories and is listed in .Rbuildignore.
+Key changes in this release:
 
-* NOTE: Undefined global functions scMetaTraj_trend and scMetaTraj_switchpoint
-  These are internal helper functions that are properly defined and used within the package.
+* restored package-level GitHub/CRAN documentation (`README`, `NEWS`, vignette)
+* exported the core workflow functions used for scoring, embedding, cluster
+  profiling, and metabolic pseudotime inference
+* clarified package metadata, URLs, and build exclusions
+
+Local `R CMD check --as-cran` results:
+
+* 0 ERROR
+* 0 WARNING
+* 1 NOTE
+
+NOTE details:
+
+* `unable to verify current time`
+  This is a standard environment/system-time note on the local Windows check
+  environment and does not reflect a package defect.
 
 ## Downstream dependencies
-There are currently no downstream dependencies for this package.
+
+There are currently no known downstream dependencies for this package.

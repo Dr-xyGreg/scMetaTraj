@@ -1,2 +1,15 @@
-^README\.Rmd$
+^.*\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^cran-comments\.md$
 ^CRAN-SUBMISSION$
+^README\.Rmd$
+^\.github$
+^pkgdown$
+^revdep$
+^.*\.tar\.gz$
+^.*\.Rhistory$
+^.*\.RData$
+^.*\.Ruserdata$
+^\.DS_Store$
+^tmp.*$

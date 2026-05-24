@@ -10,6 +10,7 @@
 #' @param scale Logical. Whether to z-score pathways across clusters.
 #'
 #' @return A data.frame: clusters x pathways.
+#' @export
 #'
 scMetaTraj_cluster_profile <- function(
     scores,

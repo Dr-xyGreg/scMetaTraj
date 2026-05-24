@@ -18,6 +18,7 @@
 #' @return A numeric matrix:
 #' - PCA: cells x PCs
 #' - UMAP: cells x 2
+#' @export
 #'
 scMetaTraj_embed <- function(
     scores,

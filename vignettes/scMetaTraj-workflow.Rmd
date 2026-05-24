@@ -1,149 +1,175 @@
-```markdown
 ---
-title: "scMetaTraj: Metabolic Trajectory Analysis"
+title: "scMetaTraj workflow"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{scMetaTraj: Metabolic Trajectory Analysis}
+  %\VignetteIndexEntry{scMetaTraj workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.width = 6,
-  fig.height = 5
+  fig.height = 4.5
 )
-Introduction
-Cellular metabolism exhibits substantial heterogeneity even within a single
-cell lineage. Traditional clustering approaches often treat metabolic states
-as discrete entities, whereas many metabolic programs evolve continuously.
+```
 
-scMetaTraj provides a framework for modeling metabolic state spaces and
-inferring continuous metabolic trajectories based on pathway-level activity.
+## Overview
 
-This vignette demonstrates a complete scMetaTraj workflow corresponding to
-Fig.1–Fig.6 in the manuscript.
+`scMetaTraj` models metabolism as a continuous state space derived from
+pathway-level scores rather than a secondary annotation layered onto
+transcriptomic clustering. The package supports:
 
-Load package
-Writing
+- pathway/module scoring from a Seurat object or expression matrix
+- metabolic state space embedding
+- metabolic subclustering
+- metabolic pseudotime inference
+- trend and switchpoint analysis along metabolic pseudotime
+
+This vignette uses a small simulated example so that it remains portable and
+does not depend on local files or large external datasets.
+
+## Simulate a small expression matrix
+
+```{r}
 library(scMetaTraj)
 
-Input data
-The input consists of:
+set.seed(2026)
 
-A normalized single-cell expression matrix
-
-Curated metabolic gene sets
-
-For demonstration purposes, we assume that the expression matrix has already
-been preprocessed.
-
-Writing
-expr: genes x cells matrix
-gene_sets: named list of metabolic gene sets
-Step 1: Metabolic module scoring (Fig.1)
-Writing
-scores <- scMetaTraj_score(expr, gene_sets)
-
-Metabolic module scores summarize pathway-level activity at the single-cell
-level and form the basis of all downstream analyses.
-
-Step 2: Metabolic state space embedding (Fig.1–2)
-Writing
-emb_pca <- scMetaTraj_embed(scores, method = "PCA")
-emb_umap <- scMetaTraj_embed(scores, method = "UMAP")
-
-The metabolic state space is constructed exclusively from metabolic module
-scores, independent of transcriptome-wide expression.
-
-Step 3: Metabolic subclustering (Fig.3)
-Writing
-metabolic_cluster <- scMetaTraj_cluster(
-embedding = emb_pca,
-k = 20,
-resolution = 0.5
+expr <- matrix(
+  rexp(14 * 100, rate = 1),
+  nrow = 14,
+  ncol = 100,
+  dimnames = list(
+    c(
+      "HK1", "PFKP", "LDHA", "GPI", "CS", "ACO2", "IDH3A",
+      "NDUFA1", "COX4I1", "ATP5F1A", "G6PD", "PGD", "ACLY", "FASN"
+    ),
+    paste0("Cell", seq_len(100))
+  )
 )
 
-Metabolic subclusters represent discrete regions in the metabolic state space.
+gene_sets <- list(
+  Glycolysis = c("HK1", "PFKP", "LDHA", "GPI"),
+  TCA = c("CS", "ACO2", "IDH3A"),
+  OXPHOS = c("NDUFA1", "COX4I1", "ATP5F1A"),
+  PPP = c("G6PD", "PGD"),
+  Lipid = c("ACLY", "FASN")
+)
+```
 
-Step 4: Metabolic pseudotime inference (Fig.4)
-Writing
+## Score metabolic modules
+
+```{r}
+scores <- scMetaTraj_score(
+  x = expr,
+  gene_sets = gene_sets,
+  method = "mean",
+  min_genes = 2,
+  scale = FALSE
+)
+
+dim(scores)
+colnames(scores)
+```
+
+## Embed cells in metabolic space
+
+`scMetaTraj_embed()` returns PCA coordinates for analysis or UMAP coordinates
+for visualization.
+
+```{r}
+emb_pca <- scMetaTraj_embed(scores, method = "PCA", n_pcs = 4)
+emb_umap <- scMetaTraj_embed(scores, method = "UMAP", n_pcs = 4)
+
+head(emb_pca)
+head(emb_umap)
+```
+
+## Identify metabolic subclusters
+
+```{r}
+clusters <- scMetaTraj_cluster(
+  embedding = emb_pca,
+  k = 12,
+  method = "louvain"
+)
+
+table(clusters)
+```
+
+Cluster-level summaries can be generated with `scMetaTraj_cluster_profile()`.
+
+```{r}
+profile_df <- scMetaTraj_cluster_profile(scores, clusters, stat = "mean")
+head(profile_df)
+```
+
+## Infer metabolic pseudotime
+
+```{r}
 traj <- scMetaTraj_infer(
-embedding = emb_pca,
-k = 20,
-root_mode = "pc1_min"
+  embedding = emb_pca,
+  k = 12,
+  root_mode = "pc1_min"
 )
 
-The inferred metabolic pseudotime (mPT) orders cells along a continuous
-metabolic trajectory without assuming temporal information.
+summary(traj$mPT)
+traj$root
+```
 
-Step 5: Distribution of metabolic states along mPT (Fig.4)
-Writing
-scMetaTraj_mPT_distribution(
-mPT = traj$mPT,
-cluster = metabolic_cluster
+The mPT distribution helper prepares ordered cluster labels along the
+trajectory:
+
+```{r}
+dist_df <- scMetaTraj_mPT_distribution(traj$mPT, clusters)
+head(dist_df)
+```
+
+## Track module trends along mPT
+
+```{r}
+gly_trend <- scMetaTraj_trend(
+  scores = scores[, "Glycolysis"],
+  mPT = traj$mPT,
+  n_bins = 20
 )
 
-This visualization summarizes how discrete metabolic states are positioned
-along the continuous metabolic trajectory.
+head(gly_trend)
+```
 
-Step 6: Module-level trends along the trajectory (Fig.5)
-Writing
-modules <- c(
-"OXPHOS",
-"TCA_Cycle",
-"Glycolysis",
-"Pentose_Phosphate_Pathway",
-"Lactate_Metabolism"
+To compare several modules at once:
+
+```{r}
+multi_res <- scMetaTraj_trend_multi(
+  score_mat = scores,
+  mPT = traj$mPT,
+  modules = c("Glycolysis", "TCA", "OXPHOS"),
+  n_bins = 20
 )
 
-res <- scMetaTraj_trend_multi(
-score_mat = scores,
-mPT = traj$mPT,
-modules = modules,
-n_bins = 30
-)
+head(multi_res$trend_long)
+multi_res$switchpoints
+```
 
+```{r fig.cap="Example trend plot for several metabolic modules."}
 scMetaTraj_plot_trend_multi(
-res$trend_long,
-res$switchpoints
+  multi_res$trend_long,
+  multi_res$switchpoints
 )
+```
 
-This step identifies non-linear metabolic reprogramming and candidate
-switchpoints along the trajectory.
+## Interpret results
 
-Step 7: Disentangling intra-state remodeling and compositional shifts (Fig.6)
-Writing
-trend_cl <- scMetaTraj_trend_by_cluster(
-score_mat = scores,
-mPT = traj$mPT,
-cluster = metabolic_cluster,
-modules = modules,
-n_bins = 25,
-min_cells = 50
-)
+The workflow above illustrates the intended package logic:
 
-scMetaTraj_plot_trend_by_cluster(
-trend_cl,
-scMetaTraj_palette_discrete
-)
+1. summarize gene expression into curated metabolic modules
+2. analyze cells in module-defined space rather than transcriptome-wide space
+3. reconstruct graph-based metabolic pseudotime
+4. quantify where module activity changes along the inferred trajectory
 
-Comparing trends within and across metabolic states distinguishes continuous
-remodeling from changes driven by state composition.
-
-Summary
-This vignette demonstrates how scMetaTraj models cellular metabolism as a
-continuous trajectory, enabling mechanistic interpretation of metabolic
-reprogramming beyond static clustering.
-
-
----
-
-## 三、为什么我给你加了 `eval = FALSE`（非常关键）
-
-你现在 **还没有 toy dataset**，如果不加：
-
-```r
-eval = FALSE
+In real analyses, the same workflow can be applied to Seurat objects and
+larger curated metabolic gene set collections, while keeping the vignette
+itself lightweight and fully reproducible.

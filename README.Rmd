@@ -15,40 +15,91 @@ knitr::opts_chunk$set(
 
 # scMetaTraj
 
-<!-- badges: start -->
-<!-- badges: end -->
-
-The goal of scMetaTraj is to ...
+`scMetaTraj` is an R package for metabolism-centered trajectory analysis in
+single-cell data. The package scores curated metabolic modules, embeds cells in
+a metabolic feature space, identifies metabolic subclusters, and infers
+metabolic pseudotime (mPT) from graph distances in that space.
 
 ## Installation
 
-You can install the development version of scMetaTraj like so:
+The development version can be installed from GitHub:
 
-``` r
-# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+```{r install-github, eval=FALSE}
+# install.packages("pak")
+pak::pak("Dr-xyGreg/scMetaTraj")
 ```
 
-## Example
+After CRAN release, install with:
 
-This is a basic example which shows you how to solve a common problem:
+```{r install-cran, eval=FALSE}
+install.packages("scMetaTraj")
+```
+
+## Core workflow
+
+The package is organized around five main steps:
+
+1. score pathway-level metabolic activity with `scMetaTraj_score()`
+2. embed cells with `scMetaTraj_embed()`
+3. identify metabolic subclusters with `scMetaTraj_cluster()`
+4. infer metabolic pseudotime with `scMetaTraj_infer()`
+5. quantify dynamic module changes with `scMetaTraj_trend()` and related
+   plotting helpers
+
+## Minimal example
+
+The example below uses a small simulated expression matrix and toy metabolic
+gene sets so that it can run without private data files.
 
 ```{r example}
 library(scMetaTraj)
-## basic example code
+
+set.seed(123)
+
+expr <- matrix(
+  rexp(12 * 80, rate = 1),
+  nrow = 12,
+  ncol = 80,
+  dimnames = list(
+    c(
+      "HK1", "PFKP", "LDHA", "GPI", "CS", "ACO2",
+      "NDUFA1", "COX4I1", "G6PD", "PGD", "ACLY", "FASN"
+    ),
+    paste0("Cell", seq_len(80))
+  )
+)
+
+gene_sets <- list(
+  Glycolysis = c("HK1", "PFKP", "LDHA", "GPI"),
+  TCA = c("CS", "ACO2"),
+  OXPHOS = c("NDUFA1", "COX4I1"),
+  PPP = c("G6PD", "PGD"),
+  Lipid = c("ACLY", "FASN")
+)
+
+scores <- scMetaTraj_score(expr, gene_sets, min_genes = 2, scale = FALSE)
+emb_pca <- scMetaTraj_embed(scores, method = "PCA", n_pcs = 4)
+clusters <- scMetaTraj_cluster(emb_pca, k = 10, method = "louvain")
+traj <- scMetaTraj_infer(emb_pca, k = 10, root_mode = "pc1_min")
+
+trend_df <- scMetaTraj_trend(
+  scores = scores[, "Glycolysis"],
+  mPT = traj$mPT,
+  n_bins = 20
+)
+
+head(trend_df)
+table(clusters)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+## Package scope
 
-```{r cars}
-summary(cars)
-```
+`scMetaTraj` is intended to complement transcriptome-centered trajectory tools.
+It is most useful when the primary biological question concerns continuous
+metabolic remodeling rather than transcriptomic lineage structure alone.
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
+## Documentation
 
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
+- The main workflow vignette is in `vignettes/scMetaTraj-workflow.Rmd`.
+- Function-level help is available with `?scMetaTraj_score`,
+  `?scMetaTraj_infer`, and related topics.

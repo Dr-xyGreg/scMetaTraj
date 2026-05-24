@@ -1,3 +1,38 @@
+#' Infer metabolic pseudotime from a k-nearest-neighbor graph
+#'
+#' @description
+#' \code{scMetaTraj_infer()} builds a weighted k-nearest-neighbor graph in
+#' metabolic PCA space and computes graph distances from a selected root cell.
+#' The rescaled distances define metabolic pseudotime (mPT).
+#'
+#' @param embedding Numeric matrix of cells x PCs, usually returned by
+#'   \code{\link{scMetaTraj_embed}(method = "PCA")}.
+#' @param k Integer. Number of nearest neighbors used to define the graph.
+#' @param root_mode Character. Strategy used to choose the root cell. One of
+#'   \code{"pc1_min"}, \code{"pc1_max"}, \code{"axis_min"},
+#'   \code{"axis_max"}, or \code{"manual"}.
+#' @param axis_score Optional numeric vector used when \code{root_mode} is
+#'   \code{"axis_min"} or \code{"axis_max"}.
+#' @param root_cell Optional character scalar giving the row name of the root
+#'   cell when \code{root_mode = "manual"}.
+#' @param scale Logical. Whether to rescale graph distances to the interval
+#'   \code{[0, 1]}.
+#'
+#' @return A named list with elements:
+#' \itemize{
+#'   \item \code{mPT}: numeric vector of metabolic pseudotime values.
+#'   \item \code{root}: selected root cell name.
+#'   \item \code{dist}: raw graph distances from the root cell.
+#' }
+#'
+#' @examples
+#' set.seed(123)
+#' embedding <- matrix(rnorm(120 * 5), nrow = 120, ncol = 5)
+#' rownames(embedding) <- paste0("Cell", seq_len(nrow(embedding)))
+#' mpt <- scMetaTraj_infer(embedding, k = 15, root_mode = "pc1_min")
+#' head(mpt$mPT)
+#'
+#' @export
 scMetaTraj_infer <- function(
     embedding,
     k = 20,
@@ -22,18 +57,25 @@ scMetaTraj_infer <- function(
   D <- as.matrix(stats::dist(emb))
   
   nn_idx <- base::apply(D, 1, function(x) order(x)[2:(k + 1)])
-  edges <- cbind(
+  edges <- data.frame(
     from = rep(seq_len(n), each = k),
-    to   = as.vector(nn_idx)
+    to = as.vector(nn_idx)
   )
-  weights <- D[edges]
+  edges$weight <- D[cbind(edges$from, edges$to)]
+  edges$from_u <- pmin(edges$from, edges$to)
+  edges$to_u <- pmax(edges$from, edges$to)
+  edges <- stats::aggregate(
+    weight ~ from_u + to_u,
+    data = edges,
+    FUN = min
+  )
   
-  g <- igraph::graph_from_edgelist(edges, directed = TRUE)
-  igraph::E(g)$weight <- weights
-  g <- igraph::as_undirected(
-    g, mode = "collapse",
-    edge_attr_comb = list(weight = "min")
+  g <- igraph::graph_from_data_frame(
+    edges[, c("from_u", "to_u", "weight")],
+    directed = FALSE,
+    vertices = data.frame(name = seq_len(n))
   )
+  igraph::E(g)$weight <- edges$weight
   
   root_idx <- switch(
     root_mode,

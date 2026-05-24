@@ -18,6 +18,7 @@
 #' @param scale Logical. Whether to z-score pathway scores across cells.
 #'
 #' @return A numeric matrix: cells x pathways.
+#' @export
 #'
 scMetaTraj_score <- function(
     x,

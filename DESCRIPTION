@@ -1,21 +1,31 @@
 Package: scMetaTraj
 Type: Package
 Title: Metabolic State Space and Trajectory Analysis for Single-Cell Data
-Version: 0.1.0
+Version: 0.1.2
+Date: 2026-05-25
 Authors@R:
-    person("Greg", "Dai",
-           email = "greg0453@163.com",
-           role = c("aut", "cre"))
+    c(
+      person("Jinwei", "Dai",
+             email = "greg0453@163.com",
+             role = c("aut", "cre"),
+             comment = c(ORCID = "0009-0003-5983-1757")),
+      person("Zhaoxin", "Qian", role = "aut"),
+      person("Zhihong", "Zuo", role = "ctb"),
+      person("Xiaoyang", "Pang", role = "ctb"),
+      person("Lixin", "Ke", role = "ctb"),
+      person("Lina", "Zhang", role = "ctb")
+    )
 Description:
-    scMetaTraj provides a framework for modeling cellular metabolic states
-    and continuous metabolic trajectories from single-cell RNA-seq data
-    using pathway-level scoring. The package enables lineage-restricted
-    metabolic analysis, metabolic pseudotime inference, module-level trend
-    analysis, and visualization of metabolic state transitions.
+    Provides a framework for modeling cellular metabolic states and continuous 
+    metabolic trajectories from single-cell RNA-seq data using pathway-level 
+    scoring. Enables lineage-restricted metabolic analysis, metabolic 
+    'pseudotime' inference, module-level trend analysis, and visualization of 
+    metabolic state transitions.
 License: MIT + file LICENSE
+URL: https://github.com/Dr-xyGreg/scMetaTraj
+BugReports: https://github.com/Dr-xyGreg/scMetaTraj/issues
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
+Depends: R (>= 4.1.0)
 Imports:
     stats,
     igraph,
@@ -25,4 +35,9 @@ Imports:
     Seurat,
     dplyr,
     tidyr
-
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
